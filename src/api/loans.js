@@ -19,8 +19,12 @@ export async function fetchLoan(environment, token, loanId) {
     },
   });
 
+  // ✅ Critical: preserve API error payload on non-2xx
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Unknown error' }));
+
     throw { status: response.status, statusText: response.statusText, data: errorData };
   }
 
