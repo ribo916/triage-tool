@@ -7,7 +7,7 @@ export default function LoanSection({ attempted, loan, error }) {
   if (!attempted) return null;
 
   return (
-    <SectionContainer title="Loan">
+    <SectionContainer title="Loan Snapshot">
       {error && (
         <>
           <p style={{ color: '#b91c1c', fontSize: '14px', marginTop: '8px' }}>
