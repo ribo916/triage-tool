@@ -8,6 +8,7 @@ The Triage Tool provides a streamlined interface for:
 
 - **Fetching and displaying recent changesets** with BaseRateSet information
 - **Optionally fetching loan data** by LOS loan ID for detailed loan analysis
+- **Fetching and displaying lock requests** for a loan with associated pricing scenarios
 - **Monitoring API calls** through a built-in log panel with timing information
 - **Switching between environments** (stage/production) for testing and debugging
 
@@ -15,6 +16,7 @@ This tool is particularly useful for:
 - Debugging API issues
 - Verifying changeset configurations
 - Inspecting loan data structures
+- Analyzing lock request history and pricing decisions
 - Understanding API call patterns and performance
 - Supporting customer inquiries with quick data access
 
@@ -78,6 +80,7 @@ graph TB
    - Custom hooks encapsulate data fetching and state
    - `useChangesets` - manages changeset data and PE rates
    - `useLoan` - manages loan data fetching with error handling
+   - `useLockRequests` - manages lock requests and pricing scenario data
    - `useApiLog` - subscribes to API log store for real-time updates
 
 3. **API Layer** (`src/api/`)
@@ -111,6 +114,7 @@ src/
 │   ├── SectionContainer.jsx   # Collapsible section wrapper with chevron icons
 │   ├── ChangesetSection.jsx   # Changeset list display with accordion
 │   ├── LoanSection.jsx        # Loan details display (conditional rendering)
+│   ├── LockRequestsSection.jsx # Lock requests display with accordion
 │   ├── ErrorDisplay.jsx       # Error message component with formatted JSON
 │   ├── ApiLogPanel.jsx        # Fixed bottom API log panel
 │   ├── changesets/
@@ -121,6 +125,7 @@ src/
 ├── hooks/
 │   ├── useChangesets.js       # Changeset fetching hook with PE rates integration
 │   ├── useLoan.js             # Loan fetching hook with error preservation
+│   ├── useLockRequests.js     # Lock requests fetching hook with pricing scenarios
 │   └── useApiLog.js           # API log subscription hook
 │
 ├── api/
@@ -129,12 +134,16 @@ src/
 │   ├── apiLogStore.js         # Global API log store (singleton)
 │   ├── changesets.js          # Changeset API client
 │   ├── loans.js               # Loan API client
-│   └── peRates.js             # PE rates API client
+│   ├── lockRequests.js        # Lock requests API client
+│   ├── peRates.js             # PE rates API client
+│   └── pricingScenarios.js    # Pricing scenarios API client
 │
 └── parsers/
     ├── changesets.js          # Changeset response parser
     ├── loans.js               # Loan response parser
-    └── peRates.js             # PE rates response parser
+    ├── lockRequests.js        # Lock requests response parser
+    ├── peRates.js             # PE rates response parser
+    └── pricingScenarios.js    # Pricing scenarios response parser
 ```
 
 ## Data Flow
@@ -152,6 +161,7 @@ sequenceDiagram
     User->>App: Submit form (token, env, loanId)
     App->>Hooks: useChangesets().fetch(env, token)
     App->>Hooks: useLoan().fetch(env, token, loanId)
+    App->>Hooks: useLockRequests().fetch(env, token, loanId)
     
     Hooks->>API: fetchChangesets(env, token)
     API->>Logger: fetchWithLog(url, options)
@@ -174,6 +184,23 @@ sequenceDiagram
     Parsers-->>Hooks: Normalized data
     
     Hooks->>Hooks: Update state (parsed, ratesByChangesetId)
+    
+    Hooks->>API: fetchLockRequests(env, token, loanId)
+    API->>Logger: fetchWithLog(url, options)
+    Logger->>Store: append(logEntry)
+    API-->>Hooks: Raw JSON response (lock requests array)
+    Hooks->>Parsers: parseLockRequests(raw)
+    Parsers-->>Hooks: Normalized lock data
+    
+    Note over Hooks: For each unique peRequestId in locks
+    Hooks->>API: fetchPricingScenario(env, token, peRequestId)
+    API->>Logger: fetchWithLog(url, options)
+    Logger->>Store: append(logEntry)
+    API-->>Hooks: Raw JSON response
+    Hooks->>Parsers: parsePricingScenario(raw)
+    Parsers-->>Hooks: Normalized pricing data
+    
+    Hooks->>Hooks: Update state (locks, pricingByPeRequestId)
     Hooks-->>App: State update
     App->>Components: Render with new data
     Components-->>User: Updated UI
@@ -404,6 +431,98 @@ return response.json();
 }
 ```
 
+### Lock Requests API
+
+**Endpoint**: `GET /api/v2/pe/loans/{losLoanId}/lock-requests/`
+
+- Fetches all lock requests for a given loan
+- Triggered automatically when `losLoanId` is provided (regardless of loan service checkbox)
+- Requires Bearer token authentication
+- Returns array of lock request objects
+
+**Response Structure** (parsed):
+```javascript
+{
+  items: Array<{
+    id: number,
+    requestedOn: string,
+    requestedBy: string,
+    requestedByUsername: string,
+    isAutoTriggered: boolean,
+    writeBackStatus: string,
+    action: string,
+    decision: string,
+    approvalMode: string,
+    buySide: {
+      changesetId: string,
+      channel: string,
+      policyId: string,
+      peRequestId: string,
+      investor: string,
+      investorId: number | null,
+      rateSheetId: string,
+      productName: string,
+      productCode: string,
+      rate: string,
+      lockPeriod: number | null,
+      expirationDate: string,
+      lockConfirmedDate: string,
+      basePrice: string,
+      netPrice: string,
+    },
+    hasSellSide: boolean
+  }>
+}
+```
+
+### Pricing Scenarios API
+
+**Endpoint**: `GET /api/v2/pe/pricing-scenarios/{peRequestId}/`
+
+- Fetches detailed pricing scenario for a specific PE request
+- Called automatically for each unique `peRequestId` found in lock requests
+- Requires Bearer token authentication
+- Large response object with borrower, loan, property, and search details
+
+**Response Structure** (parsed summary):
+```javascript
+{
+  baseRateSetId: string,
+  changesetId: string,
+  requestedOn: string,
+  completedOn: string,
+  borrower: {
+    firstName: string,
+    lastName: string,
+    fico: number | null,
+    dtiRatio: number | null,
+    annualIncome: number | null,
+  },
+  loan: {
+    amount: number | null,
+    purpose: string,
+    refinancePurpose: string,
+    ltv: number | null,
+    cltv: number | null,
+    losLoanId: string,
+  },
+  property: {
+    addressLine1: string,
+    city: string,
+    state: string,
+    zipCode: string,
+    propertyType: string,
+    occupancy: string,
+    appraisedValue: number | null,
+  },
+  search: {
+    desiredLockPeriod: number | null,
+    productCodes: string[],
+    loanTypes: string[],
+  }
+}
+```
+
 ## Environment Configuration
 
 The application supports two environments:
@@ -476,16 +595,24 @@ Errors are displayed with:
 - Red color scheme for visibility
 - Preserved API error structure for debugging
 
+### Lock Requests Analysis
+
+- Automatically fetches all lock requests when a `losLoanId` is entered
+- Displays each lock request in an accordion with:
+  - Lock details (ID, requested date, requester, action, decision, approval mode)
+  - Buy side information (product, rate, lock period, prices, investor)
+  - Pricing scenario summary (borrower FICO/DTI, loan details, property info, search criteria)
+- Fetches pricing scenarios for each unique `peRequestId` found in lock requests
+- Resilient to individual pricing scenario fetch failures
+- All accordions start closed after new analysis
+
 ### Collapsible Sections
 
-- Changesets section uses accordion pattern
-- Active changeset automatically opens by default
+- Changesets and Lock Requests sections use accordion pattern
+- All accordions start closed after clicking Analyze (new analysis)
+- Users manually expand items they want to inspect
 - SectionContainer component provides consistent collapsible behavior
 - Chevron icons indicate open/closed state
-
-### Active Changeset Highlighting
-
-The changeset with `status === 'Active'` is automatically opened when the section renders. If no active changeset exists, the first changeset is opened.
 
 ## Common Patterns
 
@@ -513,6 +640,80 @@ export function useChangesets() {
   }, []);
 
   return { data, parsed, error, loading, fetch };
+}
+```
+
+### Lock Requests Hook Pattern
+
+```javascript
+export function useLockRequests() {
+  const [locks, setLocks] = useState([]);
+  const [pricingByPeRequestId, setPricingByPeRequestId] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+
+  const fetch = useCallback(async (environment, token, loanId) => {
+    setAttempted(true);
+    setLoading(true);
+    setError(null);
+    setLocks([]);
+    setPricingByPeRequestId({});
+
+    try {
+      const rawLocks = await fetchLockRequests(environment, token, loanId);
+      const parsed = parseLockRequests(rawLocks);
+      setLocks(parsed.items);
+
+      // Collect unique peRequestIds for pricing lookups
+      const peRequestIds = Array.from(
+        new Set(
+          parsed.items
+            .map((lock) => lock.buySide?.peRequestId)
+            .filter((id) => typeof id === 'string' && id.length > 0),
+        ),
+      );
+
+      if (peRequestIds.length > 0) {
+        const results = await Promise.all(
+          peRequestIds.map(async (id) => {
+            try {
+              const rawPricing = await fetchPricingScenario(environment, token, id);
+              const parsedPricing = parsePricingScenario(rawPricing);
+              return [id, parsedPricing];
+            } catch (err) {
+              // Keep panel resilient even if some pricing calls fail
+              return [id, null];
+            }
+          }),
+        );
+
+        const next = {};
+        for (const [id, value] of results) {
+          next[id] = value;
+        }
+        setPricingByPeRequestId(next);
+      }
+    } catch (err) {
+      if (err && typeof err === 'object' && ('status' in err || 'data' in err)) {
+        setError(err);
+      } else {
+        setError({ message: err?.message ?? String(err) });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    setAttempted(false);
+    setLocks([]);
+    setPricingByPeRequestId({});
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  return { locks, pricingByPeRequestId, error, loading, attempted, fetch, reset };
 }
 ```
 
@@ -587,5 +788,8 @@ When working with this codebase:
 - **Component patterns**: Functional components with hooks only
 - **State management**: Custom hooks, no Redux or Context API
 - **Styling**: Inline style objects, minimal Tailwind usage
+- **Lock requests**: Fetched automatically when `losLoanId` is present, regardless of `hasLoanService` checkbox
+- **Pricing scenarios**: Fetched per unique `peRequestId` found in lock requests, failures are isolated
+- **Accordion state**: All accordions start closed after new analysis; users manually expand items
 
 This structure enables quick understanding of the codebase and consistent patterns for extending functionality.

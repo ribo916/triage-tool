@@ -1,15 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SectionContainer from './SectionContainer.jsx';
 import ChangesetAccordionItem from './changesets/ChangesetAccordionItem.jsx';
 
 export default function ChangesetSection({ parsed, ratesByChangesetId, ratesError }) {
-  const defaultOpenId = useMemo(() => {
-    if (!parsed?.changesets?.length) return null;
-    const active = parsed.changesets.find((cs) => cs.details?.status === 'Active');
-    return active ? active.id : parsed.changesets[0].id;
-  }, [parsed]);
-
   const [openId, setOpenId] = useState(null);
+
+  // Reset accordion state when new data arrives (new analysis)
+  useEffect(() => {
+    setOpenId(null);
+  }, [parsed]);
 
   if (!parsed) return null;
 
@@ -23,8 +22,6 @@ export default function ChangesetSection({ parsed, ratesByChangesetId, ratesErro
       </SectionContainer>
     );
   }
-
-  const effectiveOpenId = openId ?? defaultOpenId;
 
   return (
     <SectionContainer title="Recent ChangeSets (with BaseRateSet)">
@@ -43,8 +40,8 @@ export default function ChangesetSection({ parsed, ratesByChangesetId, ratesErro
           key={cs.id}
           changeset={cs}
           ratesByChangesetId={ratesByChangesetId}
-          isOpen={effectiveOpenId === cs.id}
-          onToggle={() => setOpenId(effectiveOpenId === cs.id ? null : cs.id)}
+          isOpen={openId === cs.id}
+          onToggle={() => setOpenId(openId === cs.id ? null : cs.id)}
         />
       ))}
     </SectionContainer>
