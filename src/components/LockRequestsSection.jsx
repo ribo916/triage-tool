@@ -206,7 +206,7 @@ function LockAccordionItem({ lock, pricing, lockIndex, diffFromPrevious, isOpen,
               </DetailSection>
 
               {diffFromPrevious != null && (
-                <DetailSection title="Changes from previous lock">
+                <DetailSection title="Pricing input diff from previous lock">
                   {diffFromPrevious.length === 0 ? (
                     <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
                       No changes in pricing inputs.
