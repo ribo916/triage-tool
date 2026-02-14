@@ -60,8 +60,8 @@ export default function PollyApiTriage() {
 
   return (
     <Layout>
-      <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '24px' }}>
-        API Triage Tool
+      <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '24px', color: '#111827' }}>
+        Loan Analyzer
       </h1>
 
       <TriageForm

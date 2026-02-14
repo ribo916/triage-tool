@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Layers } from 'lucide-react';
 import SectionContainer from './SectionContainer.jsx';
 import ChangesetAccordionItem from './changesets/ChangesetAccordionItem.jsx';
 
@@ -17,14 +18,14 @@ export default function ChangesetSection({ parsed, ratesByChangesetId, ratesErro
 
   if (!changesets || count === 0) {
     return (
-      <SectionContainer title="ChangeSets">
+      <SectionContainer title="ChangeSets" icon={<Layers size={20} />}>
         <p style={{ fontSize: '12px', color: '#6b7280' }}>No changesets</p>
       </SectionContainer>
     );
   }
 
   return (
-    <SectionContainer title="ChangeSets">
+    <SectionContainer title="ChangeSets" icon={<Layers size={20} />}>
       {ratesError && (
         <p style={{ fontSize: '11px', color: '#b91c1c', marginBottom: '6px' }}>
           Rate data unavailable

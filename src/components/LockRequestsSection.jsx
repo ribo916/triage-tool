@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import SectionContainer from './SectionContainer.jsx';
 import { DetailGrid, DetailSection, DetailRow } from './details/DetailPrimitives.jsx';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock } from 'lucide-react';
 
 const headerStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  padding: '8px 0',
+  gap: '10px',
+  padding: '10px 12px',
   cursor: 'pointer',
-  borderBottom: '1px solid #f3f4f6',
+  borderBottom: '1px solid #e5e7eb',
   fontSize: '13px',
   fontWeight: '500',
   color: '#1f2937',
+  borderRadius: '6px',
+  transition: 'background-color 0.15s ease',
 };
 
 const badgeStyle = (kind) => {
@@ -47,10 +49,13 @@ const badgeStyle = (kind) => {
 };
 
 const bodyStyle = {
-  padding: '8px 0 8px 20px',
+  padding: '12px 0 12px 24px',
   fontSize: '12px',
   color: '#4b5563',
   lineHeight: 1.5,
+  backgroundColor: '#f9fafb',
+  borderRadius: '6px',
+  marginTop: '2px',
 };
 
 function formatDate(isoString) {
@@ -82,6 +87,12 @@ function LockAccordionItem({ lock, pricing, isOpen, onToggle }) {
           background: 'none',
           border: 'none',
           font: 'inherit',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#f9fafb';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
         }}
       >
         {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -211,7 +222,7 @@ export default function LockRequestsSection({
   if (!attempted) return null;
 
   return (
-    <SectionContainer title="Lock Requests">
+    <SectionContainer title="Lock Requests" icon={<Lock size={20} />}>
       {error && (
         <div
           style={{

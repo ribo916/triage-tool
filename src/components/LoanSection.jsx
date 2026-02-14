@@ -1,4 +1,5 @@
 import React from 'react';
+import { FileText } from 'lucide-react';
 import SectionContainer from './SectionContainer.jsx';
 import { DetailGrid, DetailSection, DetailRow } from './details/DetailPrimitives.jsx';
 
@@ -7,7 +8,7 @@ export default function LoanSection({ attempted, loan, error }) {
   if (!attempted) return null;
 
   return (
-    <SectionContainer title="Loan Snapshot">
+    <SectionContainer title="Loan Snapshot" icon={<FileText size={20} />}>
       {error && (
         <>
           <p style={{ color: '#b91c1c', fontSize: '14px', marginTop: '8px' }}>

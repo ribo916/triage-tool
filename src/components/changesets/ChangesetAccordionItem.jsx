@@ -4,13 +4,15 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 const accordionHeaderStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  padding: '8px 0',
+  gap: '10px',
+  padding: '10px 12px',
   cursor: 'pointer',
-  borderBottom: '1px solid #f3f4f6',
+  borderBottom: '1px solid #e5e7eb',
   fontSize: '13px',
   fontWeight: '500',
   color: '#1f2937',
+  borderRadius: '6px',
+  transition: 'background-color 0.15s ease',
 };
 
 const badgeStyle = (active) => ({
@@ -23,10 +25,13 @@ const badgeStyle = (active) => ({
 });
 
 const bodyStyle = {
-  padding: '8px 0 8px 20px',
+  padding: '12px 0 12px 24px',
   fontSize: '12px',
   color: '#4b5563',
   lineHeight: 1.5,
+  backgroundColor: '#f9fafb',
+  borderRadius: '6px',
+  marginTop: '2px',
 };
 
 const rowStyle = { marginBottom: '4px' };
@@ -62,6 +67,12 @@ export default function ChangesetAccordionItem({
           background: 'none',
           border: 'none',
           font: 'inherit',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#f9fafb';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
         }}
       >
         {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
