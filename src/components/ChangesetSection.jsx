@@ -17,14 +17,14 @@ export default function ChangesetSection({ parsed, ratesByChangesetId, ratesErro
 
   if (!changesets || count === 0) {
     return (
-      <SectionContainer title="Recent ChangeSets (with BaseRateSet)">
+      <SectionContainer title="ChangeSets">
         <p style={{ fontSize: '12px', color: '#6b7280' }}>No changesets</p>
       </SectionContainer>
     );
   }
 
   return (
-    <SectionContainer title="Recent ChangeSets (with BaseRateSet)">
+    <SectionContainer title="ChangeSets">
       {ratesError && (
         <p style={{ fontSize: '11px', color: '#b91c1c', marginBottom: '6px' }}>
           Rate data unavailable

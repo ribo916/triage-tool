@@ -79,12 +79,6 @@ export default function PollyApiTriage() {
 
       <ErrorDisplay error={error} />
 
-      <ChangesetSection
-        parsed={parsed}
-        ratesByChangesetId={ratesByChangesetId}
-        ratesError={ratesError}
-      />
-
       <LoanSection attempted={loanAttempted} loan={loanData} error={loanError} />
 
       <LockRequestsSection
@@ -93,6 +87,12 @@ export default function PollyApiTriage() {
         pricingByPeRequestId={pricingByPeRequestId}
         error={lockError}
         loading={lockLoading}
+      />
+
+      <ChangesetSection
+        parsed={parsed}
+        ratesByChangesetId={ratesByChangesetId}
+        ratesError={ratesError}
       />
 
       <ApiLogPanel />
