@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SectionContainer from './SectionContainer.jsx';
 import { DetailGrid, DetailSection, DetailRow } from './details/DetailPrimitives.jsx';
 import { ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import { getPricingDiffsFromPrevious } from '../utils/pricingDiff.js';
 
 const headerStyle = {
   display: 'flex',
@@ -72,7 +73,15 @@ function formatNumber(value) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
 }
 
-function LockAccordionItem({ lock, pricing, isOpen, onToggle }) {
+/** Turn path like "borrower.fico" into "Borrower › FICO" for display */
+function pathToLabel(path) {
+  const parts = path.split('.');
+  return parts
+    .map((p) => p.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim())
+    .join(' › ');
+}
+
+function LockAccordionItem({ lock, pricing, lockIndex, diffFromPrevious, isOpen, onToggle }) {
   const auto = lock.approvalMode === 'AUTO_APPROVAL' || lock.decision === 'AUTO_APPROVED';
 
   return (
@@ -195,6 +204,43 @@ function LockAccordionItem({ lock, pricing, isOpen, onToggle }) {
                   </>
                 )}
               </DetailSection>
+
+              {diffFromPrevious != null && (
+                <DetailSection title="Changes from previous lock">
+                  {diffFromPrevious.length === 0 ? (
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                      No changes in pricing inputs.
+                    </p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #e5e7eb', textAlign: 'left' }}>
+                            <th style={{ padding: '6px 8px', fontWeight: '600', color: '#374151' }}>Field</th>
+                            <th style={{ padding: '6px 8px', fontWeight: '600', color: '#374151' }}>Previous</th>
+                            <th style={{ padding: '6px 8px', fontWeight: '600', color: '#374151' }}>Current</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {diffFromPrevious.map(({ path, previous, current }) => (
+                            <tr key={path} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                              <td style={{ padding: '6px 8px', verticalAlign: 'top', color: '#4b5563' }}>
+                                {pathToLabel(path)}
+                              </td>
+                              <td style={{ padding: '6px 8px', verticalAlign: 'top', color: '#6b7280' }}>
+                                {previous}
+                              </td>
+                              <td style={{ padding: '6px 8px', verticalAlign: 'top', color: '#111827' }}>
+                                {current}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </DetailSection>
+              )}
             </div>
           </DetailGrid>
         </div>
@@ -253,15 +299,20 @@ export default function LockRequestsSection({
 
       {hasLocks && (
         <div>
-          {locks.map((lock) => (
-            <LockAccordionItem
-              key={lock.id}
-              lock={lock}
-              pricing={pricingByPeRequestId?.[lock.buySide.peRequestId] ?? null}
-              isOpen={openId === lock.id}
-              onToggle={() => setOpenId(openId === lock.id ? null : lock.id)}
-            />
-          ))}
+          {(() => {
+            const diffsByIndex = getPricingDiffsFromPrevious(locks, pricingByPeRequestId ?? {});
+            return locks.map((lock, index) => (
+              <LockAccordionItem
+                key={lock.id}
+                lock={lock}
+                pricing={pricingByPeRequestId?.[lock.buySide.peRequestId] ?? null}
+                lockIndex={index}
+                diffFromPrevious={diffsByIndex[index] ?? null}
+                isOpen={openId === lock.id}
+                onToggle={() => setOpenId(openId === lock.id ? null : lock.id)}
+              />
+            ));
+          })()}
         </div>
       )}
     </SectionContainer>

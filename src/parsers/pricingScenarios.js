@@ -35,7 +35,8 @@
  *     desiredLockPeriod: number | null,
  *     productCodes: string[],
  *     loanTypes: string[],
- *   }
+ *   },
+ *   customValues: Record<string, string>
  * } | null}
  */
 export function parsePricingScenario(rawResponse) {
@@ -58,6 +59,10 @@ export function parsePricingScenario(rawResponse) {
   const search =
     r.search && typeof r.search === 'object'
       ? /** @type {Record<string, unknown>} */ (r.search)
+      : {};
+  const customValuesRaw =
+    r.customValues && typeof r.customValues === 'object'
+      ? /** @type {Record<string, unknown>} */ (r.customValues)
       : {};
 
   const toNumberOrNull = (value) =>
@@ -106,6 +111,14 @@ export function parsePricingScenario(rawResponse) {
         ? search.loanTypes.map((x) => String(x ?? ''))
         : [],
     },
+    customValues: (() => {
+      const out = /** @type {Record<string, string>} */ ({});
+      for (const key of Object.keys(customValuesRaw)) {
+        const v = customValuesRaw[key];
+        out[key] = v == null ? '' : String(v);
+      }
+      return out;
+    })(),
   };
 }
 
