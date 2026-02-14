@@ -15,8 +15,9 @@ export default function PollyApiTriage() {
   const [environment, setEnvironment] = useState('stage');
   const [losLoanId, setLosLoanId] = useState('');
   const [hasLoanService, setHasLoanService] = useState(false);
+  const [changeSet, setChangeSet] = useState(false);
 
-  const { parsed, ratesByChangesetId, ratesError, error, loading, fetch } = useChangesets();
+  const { parsed, ratesByChangesetId, ratesError, error, loading, attempted: changesetAttempted, fetch, reset: resetChangesets } = useChangesets();
   const {
     data: loanData,
     error: loanError,
@@ -38,20 +39,20 @@ export default function PollyApiTriage() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    fetch(environment, bearerToken);
-
-    // New analysis run: clear any previous loan attempt/data
+    // New analysis run: clear any previous attempt/data
+    resetChangesets();
     resetLoan();
-
-    // New analysis run: clear any previous lock requests/pricing
     resetLockRequests();
+
+    if (changeSet) {
+      fetch(environment, bearerToken);
+    }
 
     if (hasLoanService && losLoanId.trim()) {
       fetchLoan(environment, bearerToken, losLoanId.trim());
     }
 
-    // Lock requests should always run when a loanId is present,
-    // regardless of loan service availability.
+    // Lock requests run when a loanId is present
     if (losLoanId.trim()) {
       fetchLockRequests(environment, bearerToken, losLoanId.trim());
     }
@@ -73,14 +74,15 @@ export default function PollyApiTriage() {
         onLosLoanIdChange={setLosLoanId}
         hasLoanService={hasLoanService}
         onHasLoanServiceChange={setHasLoanService}
+        changeSet={changeSet}
+        onChangeSetChange={setChangeSet}
         onSubmit={handleSubmit}
-        loading={loading || loanLoading || lockLoading}
+        loading={(changeSet && loading) || loanLoading || lockLoading}
       />
 
       <ErrorDisplay error={error} />
 
-      <LoanSection attempted={loanAttempted} loan={loanData} error={loanError} />
-
+      
       <LockRequestsSection
         attempted={lockAttempted}
         locks={locks}
@@ -89,7 +91,16 @@ export default function PollyApiTriage() {
         loading={lockLoading}
       />
 
+      <LoanSection
+        attempted={loanAttempted}
+        loan={loanData}
+        error={loanError}
+        loading={loanLoading}
+      />
+
       <ChangesetSection
+        attempted={changesetAttempted}
+        loading={loading}
         parsed={parsed}
         ratesByChangesetId={ratesByChangesetId}
         ratesError={ratesError}

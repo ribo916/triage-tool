@@ -3,7 +3,7 @@ import { Layers } from 'lucide-react';
 import SectionContainer from './SectionContainer.jsx';
 import ChangesetAccordionItem from './changesets/ChangesetAccordionItem.jsx';
 
-export default function ChangesetSection({ parsed, ratesByChangesetId, ratesError }) {
+export default function ChangesetSection({ attempted, loading, parsed, ratesByChangesetId, ratesError }) {
   const [openId, setOpenId] = useState(null);
 
   // Reset accordion state when new data arrives (new analysis)
@@ -11,7 +11,23 @@ export default function ChangesetSection({ parsed, ratesByChangesetId, ratesErro
     setOpenId(null);
   }, [parsed]);
 
-  if (!parsed) return null;
+  if (!attempted) return null;
+
+  if (loading) {
+    return (
+      <SectionContainer title="ChangeSets" icon={<Layers size={20} />}>
+        <p style={{ fontSize: '12px', color: '#6b7280' }}>Loading...</p>
+      </SectionContainer>
+    );
+  }
+
+  if (!parsed) {
+    return (
+      <SectionContainer title="ChangeSets" icon={<Layers size={20} />}>
+        <p style={{ fontSize: '12px', color: '#6b7280' }}>No changesets</p>
+      </SectionContainer>
+    );
+  }
 
   const { total, changesets } = parsed;
   const count = changesets?.length ?? 0;

@@ -7,6 +7,10 @@ export const sectionTitleStyle = {
   fontWeight: '600',
   color: '#374151',
   marginBottom: '8px',
+  padding: '6px 10px',
+  backgroundColor: '#f3f4f6',
+  borderRadius: '4px',
+  borderLeft: '3px solid #d1d5db',
 };
 
 export const rowStyle = {

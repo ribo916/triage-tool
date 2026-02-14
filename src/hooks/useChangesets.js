@@ -5,7 +5,7 @@ import { parseChangesets } from '../parsers/changesets.js';
 import { parsePeRates } from '../parsers/peRates.js';
 
 /**
- * @returns {{ data: unknown | null, parsed: unknown | null, ratesByChangesetId: Record<string, { items: Array<{ id: string, changesetId: string, baseRateSetId?: string }>, total: number }>, ratesError: { status?: number, statusText?: string, data?: unknown } | null, error: { status?: number, statusText?: string, data?: unknown } | null, loading: boolean, fetch: (environment: 'prod' | 'stage', token: string) => Promise<void> }}
+ * @returns {{ data: unknown | null, parsed: unknown | null, ratesByChangesetId: Record<string, { items: Array<{ id: string, changesetId: string, baseRateSetId?: string }>, total: number }>, ratesError: { status?: number, statusText?: string, data?: unknown } | null, error: { status?: number, statusText?: string, data?: unknown } | null, loading: boolean, attempted: boolean, fetch: (environment: 'prod' | 'stage', token: string) => Promise<void>, reset: () => void }}
  */
 export function useChangesets() {
   const [data, setData] = useState(null);
@@ -14,8 +14,10 @@ export function useChangesets() {
   const [ratesError, setRatesError] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [attempted, setAttempted] = useState(false);
 
   const fetch = useCallback(async (environment, token) => {
+    setAttempted(true);
     setLoading(true);
     setError(null);
     setRatesError(null);
@@ -53,5 +55,15 @@ export function useChangesets() {
     }
   }, []);
 
-  return { data, parsed, ratesByChangesetId, ratesError, error, loading, fetch };
+  const reset = useCallback(() => {
+    setData(null);
+    setParsed(null);
+    setRatesByChangesetId({});
+    setRatesError(null);
+    setError(null);
+    setLoading(false);
+    setAttempted(false);
+  }, []);
+
+  return { data, parsed, ratesByChangesetId, ratesError, error, loading, attempted, fetch, reset };
 }
